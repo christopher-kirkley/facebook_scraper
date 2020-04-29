@@ -20,18 +20,22 @@ def find_friends():
     friends_page = driver.find_element_by_xpath("//div[@id='root']//a[text()='Friends']").get_attribute('href')
     driver.get(friends_page)
     sleep(2)
-    friend_list = driver.find_elements_by_xpath("//a[@class='cj']")
+    friends = driver.find_element_by_xpath("//div[@id='root']/div[1]/div[2]")
+    friend_links = friends.find_elements_by_xpath("div/table/tbody/tr/td[2]/a")
+    friend_list = []
+    for friend in friend_links:
+        friend_list.append((friend.text, friend.get_attribute("href")))
     return friend_list
 
 def check_has_public_friends(friends):
     if len(friends) == 0:
-        public = False
+        public = Falsef
     else:
         public = True
     return public
 
 def get_profile_pic(i):
-    profile_pic_link = driver.find_element_by_xpath("//a[@class='bo']").get_attribute("href")
+    profile_pic_link = driver.find_element_by_xpath("//div[@id='root']/div/div/div/a").get_attribute("href")
     driver.get(profile_pic_link)
     sleep(1)
     pic = driver.find_element_by_xpath("//img[@class='img']").get_attribute("src")
@@ -40,7 +44,8 @@ def get_profile_pic(i):
 def pick_new_friend(friend_list):
     number_of_friends = len(friend_list)
     friend_to_pick = randint(4, number_of_friends-1)
-    friend_link = friend_list[friend_to_pick].click()
+    friend_link = friend_list[friend_to_pick][1]
+    driver.get(friend_link) 
     sleep(3)
     return friend_link
 
@@ -71,28 +76,28 @@ ok_button.click()
 sleep(3)
 
 # go to seed account
-source_friend = 'https://m.facebook.com/dilbar.hossan.948'
+source_friend = 'https://m.facebook.com/rdxriazul.roy'
 get_friend(source_friend)
 randsleep()
 i = 0
 
 while True:
-    friend_list = find_friends()
+    friend_links = find_friends()
     randsleep()
-    check = check_has_public_friends(friend_list)
+    check = check_has_public_friends(friend_links)
     randsleep()
     while check == False:
         break
         randsleep()
         friend_list = find_friends()
         randsleep()
-        check = check_has_public_friends(friend_list)
+        check = check_has_public_friends(friend_links)
     get_profile_pic(i)
     randsleep()
     get_friend(source_friend)
     randsleep()
-    friend_list = find_friends()
-    source_friend = pick_new_friend(friend_list)
+    friend_links = find_friends()
+    source_friend = pick_new_friend(friend_links)
     randsleep()
     i += 1
 
