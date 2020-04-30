@@ -15,21 +15,50 @@ def randsleep():
 def get_friend(source_friend):
     driver.get(source_friend)
 
-def find_friends():
+def go_to_friends_page():
     """Go to friends page to see friends"""
     friends_page = driver.find_element_by_xpath("//div[@id='root']//a[text()='Friends']").get_attribute('href')
     driver.get(friends_page)
-    sleep(2)
+
+def see_more():
+    friends = driver.find_element_by_xpath("//div[@id='root']/div[1]/div[1]")
+
+def find_friends():
     friends = driver.find_element_by_xpath("//div[@id='root']/div[1]/div[2]")
-    friend_links = friends.find_elements_by_xpath("div/table/tbody/tr/td[2]/a")
+    friend_links = friends.find_elements_by_xpath("div/table/tbody/tr/td[2]")
     friend_list = []
-    for friend in friend_links:
-        friend_list.append((friend.text, friend.get_attribute("href")))
-    return friend_list
+    for friend_link in friend_links:
+        if 'mutual friend' in friend_link.find_element_by_xpath("div").text:
+            pass
+        else:
+            name = friend_link.find_element_by_xpath("a").text
+            link = friend_link.find_element_by_xpath("a").get_attribute("href")
+            friend_list.append(name, link)
+    if friend_list == []:
+        randsleep()
+        driver.find_element_by_xpath("//span[text()='See More Friends']").click()
+        randsleep()
+        # FIX THIS RECURSIVE FUNCTION
+        find_friends()
+    else:
+        return friend_list
+
+
+
+            
+
+
+# def find_friends():
+#     friends = driver.find_element_by_xpath("//div[@id='root']/div[1]/div[2]")
+#     friend_links = friends.find_elements_by_xpath("div/table/tbody/tr/td[2]/a")
+#     friend_list = []
+#     for friend in friend_links:
+#         friend_list.append((friend.text, friend.get_attribute("href")))
+#     return friend_list
 
 def check_has_public_friends(friends):
     if len(friends) == 0:
-        public = Falsef
+        public = False
     else:
         public = True
     return public
@@ -54,51 +83,52 @@ options = Options()
 options.preferences.update({"javascript.enabled": False})
 driver = Firefox(executable_path = '/Users/ck/python/geckodriver/geckodriver', options=options)
 
-driver.get('https://m.facebook.com')
+def login():
+    driver.get('https://m.facebook.com')
+    sleep(1)
+    username_box = driver.find_element_by_name('email')
+    username_box.send_keys(USER)
+    sleep(1)
+    password_box = driver.find_element_by_name('pass')
+    password_box.send_keys(PASSWORD)
+    sleep(1)
+    login_box = driver.find_element_by_name('login')
+    login_box.click()
+    sleep(2)
+    # click the OK button
+    ok_button = driver.find_element_by_class_name('bk')
+    ok_button.click()
+    sleep(3)
 
-sleep(1)
-
-username_box = driver.find_element_by_name('email')
-username_box.send_keys(USER)
-sleep(1)
-password_box = driver.find_element_by_name('pass')
-password_box.send_keys(PASSWORD)
-sleep(1)
-login_box = driver.find_element_by_name('login')
-login_box.click()
-
-sleep(2)
-
-# click the OK button
-ok_button = driver.find_element_by_class_name('bk')
-ok_button.click()
-
-sleep(3)
-
-# go to seed account
-source_friend = 'https://m.facebook.com/rdxriazul.roy'
-get_friend(source_friend)
-randsleep()
-i = 0
-
-while True:
-    friend_links = find_friends()
-    randsleep()
-    check = check_has_public_friends(friend_links)
-    randsleep()
-    while check == False:
-        break
-        randsleep()
-        friend_list = find_friends()
-        randsleep()
-        check = check_has_public_friends(friend_links)
-    get_profile_pic(i)
-    randsleep()
+def initialize():
+    # go to seed account
+    source_friend = 'https://m.facebook.com/rdxriazul.roy'
     get_friend(source_friend)
     randsleep()
-    friend_links = find_friends()
-    source_friend = pick_new_friend(friend_links)
-    randsleep()
-    i += 1
+    i = 0
+
+login()
+initialize()
+
+# while True:
+#     go_to_friends_page()
+#     friend_links = find_friends()
+#     randsleep()
+#     check = check_has_public_friends(friend_links)
+#     randsleep()
+#     while check == False:
+#         break
+#         randsleep()
+#         friend_list = find_friends()
+#         randsleep()
+#         check = check_has_public_friends(friend_links)
+#     get_profile_pic(i)
+#     randsleep()
+#     get_friend(source_friend)
+#     randsleep()
+#     friend_links = find_friends()
+#     source_friend = pick_new_friend(friend_links)
+#     randsleep()
+#     i += 1
 
 
