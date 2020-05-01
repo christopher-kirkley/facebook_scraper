@@ -1,5 +1,6 @@
 from selenium.webdriver import Firefox
 from selenium.webdriver.firefox.options import Options  
+from selenium.common.exceptions import NoSuchElementException
 from time import sleep
 
 import urllib.request
@@ -12,19 +13,20 @@ def randsleep():
     sleeptime = randint(4,9)
     sleep(sleeptime)
 
-def get_friend(source_friend):
-    driver.get(source_friend)
 
 def go_to_friends_page():
     """Go to friends page to see friends"""
-    friends_page = driver.find_element_by_xpath("//div[@id='root']//a[text()='Friends']").get_attribute('href')
+    try:
+        friends_page = driver.find_element_by_xpath("//div[@id='root']//a[text()='Friends']").get_attribute('href')
+    except NoSuchElementException:
+        pass
     driver.get(friends_page)
 
 def see_more():
     friends = driver.find_element_by_xpath("//div[@id='root']/div[1]/div[1]")
 
-def find_friends():
-    friends = driver.find_element_by_xpath("//div[@id='root']/div[1]/div[2]")
+def create_friend_list():
+    friends = driver.find_element_by_xpath("//h3[contains(text(),'Friends')]/parent::div/div")
     friend_links = friends.find_elements_by_xpath("div/table/tbody/tr/td[2]")
     friend_list = []
     for friend_link in friend_links:
@@ -33,13 +35,15 @@ def find_friends():
         else:
             name = friend_link.find_element_by_xpath("a").text
             link = friend_link.find_element_by_xpath("a").get_attribute("href")
-            friend_list.append(name, link)
+            friend_list.append((name, link))
     if friend_list == []:
         randsleep()
-        driver.find_element_by_xpath("//span[text()='See More Friends']").click()
+        try:
+            driver.find_element_by_xpath("//span[text()='See More Friends']").click()
+        except NoSuchElementException:
+            return friend_list
         randsleep()
-        # FIX THIS RECURSIVE FUNCTION
-        find_friends()
+        create_friend_list()
     else:
         return friend_list
 
@@ -56,14 +60,7 @@ def find_friends():
 #         friend_list.append((friend.text, friend.get_attribute("href")))
 #     return friend_list
 
-def check_has_public_friends(friends):
-    if len(friends) == 0:
-        public = False
-    else:
-        public = True
-    return public
-
-def get_profile_pic(i):
+def get_profile_pic():
     profile_pic_link = driver.find_element_by_xpath("//div[@id='root']/div/div/div/a").get_attribute("href")
     driver.get(profile_pic_link)
     sleep(1)
@@ -72,9 +69,10 @@ def get_profile_pic(i):
 
 def pick_new_friend(friend_list):
     number_of_friends = len(friend_list)
-    friend_to_pick = randint(4, number_of_friends-1)
+    friend_to_pick = randint(0, number_of_friends-1)
     friend_link = friend_list[friend_to_pick][1]
     driver.get(friend_link) 
+    # check that friend is valid, if YES return link, else repeat
     sleep(3)
     return friend_link
 
@@ -100,35 +98,29 @@ def login():
     ok_button.click()
     sleep(3)
 
-def initialize():
-    # go to seed account
-    source_friend = 'https://m.facebook.com/rdxriazul.roy'
-    get_friend(source_friend)
-    randsleep()
-    i = 0
-
 login()
-initialize()
+source_friend = 'https://m.facebook.com/rdxriazul.roy'
+driver.get(source_friend)
+randsleep()
+i = 0
+profile_dict = {}
+profile_dict[i] = source_friend
 
-# while True:
-#     go_to_friends_page()
-#     friend_links = find_friends()
-#     randsleep()
-#     check = check_has_public_friends(friend_links)
-#     randsleep()
-#     while check == False:
-#         break
-#         randsleep()
-#         friend_list = find_friends()
-#         randsleep()
-#         check = check_has_public_friends(friend_links)
-#     get_profile_pic(i)
-#     randsleep()
-#     get_friend(source_friend)
-#     randsleep()
-#     friend_links = find_friends()
-#     source_friend = pick_new_friend(friend_links)
-#     randsleep()
-#     i += 1
+
+while True:
+    friend_links = []
+    go_to_friends_page()
+    friend_links = create_friend_list()
+    randsleep()
+    get_profile_pic()
+    randsleep()
+    driver.get(source_friend)
+    randsleep()
+    friend_links = create_friend_list()
+    source_friend = pick_new_friend(friend_links)
+    # pick and check friend is valid
+    randsleep()
+    i += 1
+    profile_dict[i] = source_friend
 
 
