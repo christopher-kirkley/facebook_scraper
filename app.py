@@ -86,36 +86,58 @@ class Driver:
         sleep(3)
         return friend_link
 
+    def check_can_access_friend_page(self, source_friend):
+        try:
+            randsleep()
+            self.go_to_friends_page()
+            return True
+        except NoSuchElementException:
+            return False
+    
+    def check_has_public_friends(self, source_friend):
+        friend_list = self.create_friend_list()
+        if len(friend_list) <= 1:
+            return False
+        else:
+            return True
+    
+    def check_new_friend(self, source_friend):
+        # make sure they are not in stored list
+        pass
+
 
 def main():
+    print("Initializing...")
     driver = Driver()
+    print("Logging in...")
     driver.login()
     source_friend = 'https://m.facebook.com/christopher.kirkley'
     """Go to source friend"""
     randsleep()
-    driver.driver.get(source_friend)
 
     while True:
-        """Check source has friends page accessible"""
-        try:
-            randsleep()
-            driver.go_to_friends_page()
-        except NoSuchElementException:
-            print('No Friend')
-            break
+        print("Finding new friend.")
+        driver.driver.get(source_friend)
+        randsleep()
+        driver.go_to_friends_page()
         friend_links = driver.create_friend_list()
-        if friend_links == []:
-            previous_profile = profiles[driver.i]['link']
-            driver.driver.get(previous_profile)
-        else:
-            randsleep()
-            driver.driver.get(source_friend)
-            driver.save() # Save entry
-            driver.get_profile_pic() # Get profile pic
-            randsleep()
+        randsleep()
+        driver.driver.get(source_friend)
+        driver.save() # Save entry
+        driver.get_profile_pic() # Get profile pic
+        print(f"Addeded {driver.profiles[driver.i]}")
+        randsleep()
+        while True:
             source_friend = driver.pick_new_friend(friend_links)
-            randsleep()
-            driver.i += 1
+            check_can_access_friend_page = driver.check_can_access_friend_page(source_friend)
+            check_has_public_friends = driver.check_has_public_friends(source_friend)
+            if check_can_access_friend_page == False or check_has_public_friends == False:
+                randsleep()
+                pass
+            else:
+                randsleep()
+                driver.i += 1
+                break
 
 if __name__ == '__main__':
     main()
