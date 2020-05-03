@@ -19,6 +19,7 @@ class Driver:
         options.preferences.update({"javascript.enabled": False})
         self.driver = Firefox(options=options)
         self.profiles = []
+        self.i = 0
     
     def login(self):
         self.driver.get('https://m.facebook.com')
@@ -57,76 +58,64 @@ class Driver:
         self.driver.get(friends_page)
 
     def create_friend_list(self):
-        randsleep()
-        friends = self.driver.find_element_by_xpath("//h3[contains(text(),'Friends')]/following-sibling::div")
-        friend_links = friends.find_elements_by_xpath("div/table/tbody/tr/td[2]")
-        friend_list = []
-        for friend_link in friend_links:
-            if 'mutual friend' in friend_link.find_element_by_xpath("div").text:
-                pass
-            else:
+        try:
+            friends = self.driver.find_element_by_xpath("//h3[contains(text(),'Friends')]/following-sibling::div")
+            friend_links = friends.find_elements_by_xpath("div/table/tbody/tr/td[2]")
+            friend_list = []
+            for friend_link in friend_links:
                 link = friend_link.find_element_by_xpath("a").get_attribute("href")
                 friend_list.append(link)
-        if len(friend_list) < 10:
-            print('less than 10')
-            print(friend_list)
-            randsleep()
-            self.driver.find_element_by_xpath("//span[text()='See More Friends']").click()
-            randsleep()
-            friend_list = self.create_friend_list()
             return friend_list
-        elif len(friend_list) > 10:
-            print('more than 10')
-            print(friend_list)
-            return friend_list
+        except NoSuchElementException:
+            return []
 
     def get_profile_pic(self):
-        profile_pic_link = self.driver.find_element_by_xpath("//div[@id='root']/div/div/div/a").get_attribute("href")
+        # profile_pic_link = self.driver.find_element_by_xpath("//div[@id='root']/div/div/div/a").get_attribute("href")
+        profile_pic_link = self.driver.find_element_by_xpath("//div[@id='root']/div/div/div[2]/div/div/div/a").get_attribute("href")
         self.driver.get(profile_pic_link)
         sleep(1)
         pic = self.driver.find_element_by_xpath("//img[@class='img']").get_attribute("src")
-        urllib.request.urlretrieve(pic, f"file{i}.jpg")
+        urllib.request.urlretrieve(pic, f"file{self.i}.jpg")
 
     def pick_new_friend(self, friend_list):
         number_of_friends = len(friend_list)
         friend_to_pick = randint(0, number_of_friends-1)
-        friend_link = friend_list[friend_to_pick][1]
+        friend_link = friend_list[friend_to_pick]
         self.driver.get(friend_link) 
         # check that friend is valid, if YES return link, else repeat
         sleep(3)
-        return self.friend_link
+        return friend_link
 
 
 def main():
     driver = Driver()
     driver.login()
-    source_friend = 'https://m.facebook.com/rdxriazul.roy'
+    source_friend = 'https://m.facebook.com/christopher.kirkley'
     """Go to source friend"""
+    randsleep()
     driver.driver.get(source_friend)
 
-    i = 0 # Set counter to 0
     while True:
-        driver.save()
         """Check source has friends page accessible"""
         try:
+            randsleep()
             driver.go_to_friends_page()
         except NoSuchElementException:
-            print('Invalid Friend')
+            print('No Friend')
             break
         friend_links = driver.create_friend_list()
-        randsleep()
-        # return to main page
-        driver.get(source_friend)
-        get_profile_pic()
-        randsleep()
-        driver.get(source_friend)
-        randsleep()
-        friend_links = create_friend_list(driver)
-        source_friend = pick_new_friend(friend_links)
-        # pick and check friend is valid
-        randsleep()
-        i += 1
-        profile_dict[i] = source_friend
+        if friend_links == []:
+            previous_profile = profiles[driver.i]['link']
+            driver.driver.get(previous_profile)
+        else:
+            randsleep()
+            driver.driver.get(source_friend)
+            driver.save() # Save entry
+            driver.get_profile_pic() # Get profile pic
+            randsleep()
+            source_friend = driver.pick_new_friend(friend_links)
+            randsleep()
+            driver.i += 1
 
 if __name__ == '__main__':
     main()
