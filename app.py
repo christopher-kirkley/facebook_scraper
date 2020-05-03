@@ -42,13 +42,13 @@ class Driver:
         link = self.driver.current_url
         name = self.driver.find_element_by_xpath("//div[@id='root']/div/div/div[2]/div/span/div").text
         try:
-            info = self.driver.find_element_by_xpath("//div[@id='root']/div/div/div[2]/div/span/span").text
+            city = self.driver.find_element_by_xpath("//span[text()='Current City']//ancestor::td/following-sibling::td").text
         except NoSuchElementException:
-            info = []
+            city = ''
         entry = {
                 'link': link,
                 'name': name,
-                'info': info
+                'city': city,
                 }
         self.profiles.append(entry)
         
@@ -74,7 +74,7 @@ class Driver:
         profile_pic_link = self.driver.find_element_by_xpath("//div[@id='root']/div/div/div[2]/div/div/div/a").get_attribute("href")
         self.driver.get(profile_pic_link)
         sleep(1)
-        pic = self.driver.find_element_by_xpath("//img[@class='img']").get_attribute("src")
+        pic = self.driver.find_element_by_xpath("//div[@id='root']//img").get_attribute("src")
         urllib.request.urlretrieve(pic, f"file{self.i}.jpg")
 
     def pick_new_friend(self, friend_list):
@@ -112,7 +112,6 @@ def main():
     print("Logging in...")
     driver.login()
     source_friend = 'https://m.facebook.com/christopher.kirkley'
-    """Go to source friend"""
     randsleep()
 
     while True:
