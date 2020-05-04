@@ -3,11 +3,34 @@ from selenium.webdriver.firefox.options import Options
 from selenium.common.exceptions import NoSuchElementException
 from time import sleep
 
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import sessionmaker
+
 import urllib.request
 
 from random import randint
 
 from config import USER, PASSWORD
+
+engine = create_engine('sqlite:///facebook.db')
+Base = declarative_base()
+
+class Profiles(Base):
+    __tablename__ = 'profiles'
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String(200))
+    city = Column(String(100))
+    link = Column(String(300))
+
+Base.metadata.bind = engine
+Base.metadata.create_all()
+
+Session = sessionmaker(bind=engine)
+db_session = Session()
+
 
 def randsleep():
     sleeptime = randint(4,9)
@@ -51,26 +74,42 @@ class Driver:
                 'city': city,
                 }
         self.profiles.append(entry)
-        
+        new_entry = Profiles(link=link,
+                            name=name,
+                            city=city,
+                            )
+        db_session.add(new_entry)
+        db_session.commit()
         
     def go_to_friends_page(self):
         friends_page = self.driver.find_element_by_xpath("//div[@id='root']//a[text()='Friends']").get_attribute('href')
         self.driver.get(friends_page)
 
+    def add_friends_to_list(self, friend_list):
+        friends = self.driver.find_element_by_xpath("//h3[contains(text(),'Friends')]/following-sibling::div")
+        friend_links = friends.find_elements_by_xpath("div/table/tbody/tr/td[2]")
+        for friend_link in friend_links:
+            link = friend_link.find_element_by_xpath("a").get_attribute("href")
+            friend_list.append(link)
+        randsleep()
+        if len(friend_list) < 100:
+            try:
+                self.driver.find_element_by_xpath("//span[text()='See More Friends']").click()
+            except NoSuchElementException:
+                return friend_list
+            randsleep()
+            return self.add_friends_to_list(friend_list)
+        return friend_list
+
     def create_friend_list(self):
+        friend_list = []
         try:
-            friends = self.driver.find_element_by_xpath("//h3[contains(text(),'Friends')]/following-sibling::div")
-            friend_links = friends.find_elements_by_xpath("div/table/tbody/tr/td[2]")
-            friend_list = []
-            for friend_link in friend_links:
-                link = friend_link.find_element_by_xpath("a").get_attribute("href")
-                friend_list.append(link)
+            friend_list = self.add_friends_to_list(friend_list)
             return friend_list
         except NoSuchElementException:
             return []
 
     def get_profile_pic(self):
-        # profile_pic_link = self.driver.find_element_by_xpath("//div[@id='root']/div/div/div/a").get_attribute("href")
         profile_pic_link = self.driver.find_element_by_xpath("//div[@id='root']/div/div/div[2]/div/div/div/a").get_attribute("href")
         self.driver.get(profile_pic_link)
         sleep(1)
@@ -86,7 +125,7 @@ class Driver:
         sleep(3)
         return friend_link
 
-    def check_can_access_friend_page(self, source_friend):
+    def check_can_access_friend_page(self):
         try:
             randsleep()
             self.go_to_friends_page()
@@ -94,9 +133,10 @@ class Driver:
         except NoSuchElementException:
             return False
     
-    def check_has_public_friends(self, source_friend):
-        friend_list = self.create_friend_list()
-        if len(friend_list) <= 1:
+    def check_has_public_friends(self):
+        friends = self.driver.find_element_by_xpath("//h3[contains(text(),'Friends')]/following-sibling::div")
+        friend_links = friends.find_elements_by_xpath("div/table/tbody/tr/td[2]")
+        if len(friend_links) <= 1:
             return False
         else:
             return True
@@ -128,8 +168,8 @@ def main():
         randsleep()
         while True:
             source_friend = driver.pick_new_friend(friend_links)
-            check_can_access_friend_page = driver.check_can_access_friend_page(source_friend)
-            check_has_public_friends = driver.check_has_public_friends(source_friend)
+            check_can_access_friend_page = driver.check_can_access_friend_page()
+            check_has_public_friends = driver.check_has_public_friends()
             if check_can_access_friend_page == False or check_has_public_friends == False:
                 randsleep()
                 pass
