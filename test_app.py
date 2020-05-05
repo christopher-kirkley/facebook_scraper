@@ -59,15 +59,33 @@ def test_check_has_public_friends(browser):
     check = browser.check_has_public_friends()
     assert check == False
 
-def test_can_access_friend_page(browser):
-    page = 'https://m.facebook.com/christopher.kirkley'
-    browser.driver.get(page)
+def test_check_can_access_friend_page(browser):
+    public_friend_page = 'https://m.facebook.com/christopher.kirkley'
+    browser.driver.get(public_friend_page)
     check = browser.check_can_access_friend_page()
     assert check == True
-    page = 'https://m.facebook.com/coachtunde/'
-    browser.driver.get(page)
+    private_friend_page = 'https://m.facebook.com/profile.php?id=100035967198582'
+    browser.driver.get(private_friend_page)
     check = browser.check_can_access_friend_page()
     assert check == False
+
+def test_verified_friend(browser):
+    friend_links = ['https://m.facebook.com/christopher.kirkley']
+    source_friend = browser.find_verified_friend(friend_links)
+    assert source_friend == 'https://m.facebook.com/christopher.kirkley'
+
+def test_non_verified_friend(browser):
+    friend_links = ['https://m.facebook.com/profile.php?id=100035967198582', 'https://m.facebook.com/coachtunde/friends']
+    source_friend = browser.find_verified_friend(friend_links)
+    assert source_friend == ''
+
+
+
+
+
+
+
+
 
 def test_db_can_save_and_retrieve(db_session):
     test_profile = Profiles()

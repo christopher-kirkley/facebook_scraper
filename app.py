@@ -33,7 +33,7 @@ db_session = Session()
 
 
 def randsleep():
-    sleeptime = randint(4,9)
+    sleeptime = randint(7,11)
     sleep(sleeptime)
 
 class Driver:
@@ -121,7 +121,6 @@ class Driver:
         friend_to_pick = randint(0, number_of_friends-1)
         friend_link = friend_list[friend_to_pick]
         self.driver.get(friend_link) 
-        # check that friend is valid, if YES return link, else repeat
         sleep(3)
         return friend_link
 
@@ -144,6 +143,26 @@ class Driver:
     def check_new_friend(self, source_friend):
         # make sure they are not in stored list
         pass
+    
+    def find_verified_friend(self, friend_links):
+        while True:
+            source_friend = self.pick_new_friend(friend_links)
+            check_can_access_friend_page = self.check_can_access_friend_page()
+            if check_can_access_friend_page == True:
+                check_has_public_friends = self.check_has_public_friends()
+            if check_can_access_friend_page == False or check_has_public_friends == False:
+                randsleep()
+                friend_links.remove(source_friend)
+                if friend_links == []:
+                    return ''
+                else:
+                    pass
+            else:
+                randsleep()
+                self.i += 1
+                break
+        return source_friend
+
 
 
 def main():
