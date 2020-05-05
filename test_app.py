@@ -3,6 +3,10 @@ import pytest
 from app import Driver, engine, Session, Profiles
 from time import sleep
 
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.orm import sessionmaker
 
 @pytest.fixture(scope="module")
 def browser():
@@ -18,11 +22,11 @@ def connection():
     connection.close()
 
 @pytest.fixture(scope="function")
-def db_session(connection):
+def session(connection):
     transaction = connection.begin()
-    db_session = Session(bind=connection)
-    yield db_session
-    db_session.close()
+    session = Session(bind=connection)
+    yield session
+    session.close()
     transaction.rollback()
 
 """Tests"""
@@ -45,9 +49,21 @@ def test_can_create_friend_list(browser):
     assert len(friend_list) > 100
     
 def test_can_pick_new_friend(browser):
-    friend_list = browser.create_friend_list()
+    friend_list = ['https://m.facebook.com/christopher.kirkley', 'https://m.facebook.com/coachtunde']
     new_friend = browser.pick_new_friend(friend_list)
     assert new_friend in friend_list
+
+"""FAILING"""
+def test_friend_in_db_fails(browser):
+    friend_list = ['https://m.facebook.com/christopher.kirkley']
+    browser.driver.get('https://m.facebook.com/christopher.kirkley')
+    browser.save()
+    new_friend = browser.pick_new_friend(friend_list)
+    assert new_friend == ''
+
+    
+    
+    
 
 def test_check_has_public_friends(browser):
     page = 'https://m.facebook.com/christopher.kirkley/friends'
@@ -79,6 +95,24 @@ def test_non_verified_friend(browser):
     source_friend = browser.find_verified_friend(friend_links)
     assert source_friend == ''
 
+def test_check_friend_in_db(session):
+    test_profile = Profiles()
+    test_profile.name = 'Tom Jones'
+    test_profile.link = 'google.com'
+    test_profile.city = 'New York'
+    session.add(test_profile)
+    session.commit()
+    links = [link[0] for link in session.query(Profiles.link).all()]
+    assert ('google.com' in links) == True
+
+def test_added_to_db_and_check(browser):
+    source_friend = 'https://m.facebook.com/christopher.kirkley'
+    browser.driver.get(page)
+    browser.save()
+    check = browser.check_friend_in_db(source_friend)
+    assert check == True
+    
+    
 
 
 
@@ -87,24 +121,26 @@ def test_non_verified_friend(browser):
 
 
 
-def test_db_can_save_and_retrieve(db_session):
+
+
+def test_db_can_save_and_retrieve(session):
     test_profile = Profiles()
     test_profile.name = 'Tom'
     test_profile.link = 'google.com'
     test_profile.city = 'New York'
-    db_session.add(test_profile)
-    db_session.commit()
-    result = db_session.query(Profiles).first()
+    session.add(test_profile)
+    session.commit()
+    result = session.query(Profiles).first()
     assert result.name == 'Tom' 
     assert result.link == 'google.com' 
     assert result.city == 'New York' 
     
 
-def test_can_save_to_database(browser, db_session):
+def test_can_save_to_database(browser, session):
     page = 'https://m.facebook.com/christopher.kirkley'
     browser.driver.get(page)
     browser.save()
-    result = db_session.query(Profiles).first()
+    result = session.query(Profiles).first()
     assert result.name == 'Christopher Kirkley' 
     assert result.link == 'https://m.facebook.com/christopher.kirkley' 
     assert result.city == '' 

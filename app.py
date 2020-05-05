@@ -29,7 +29,7 @@ Base.metadata.bind = engine
 Base.metadata.create_all()
 
 Session = sessionmaker(bind=engine)
-db_session = Session()
+session = Session()
 
 
 def randsleep():
@@ -78,8 +78,8 @@ class Driver:
                             name=name,
                             city=city,
                             )
-        db_session.add(new_entry)
-        db_session.commit()
+        session.add(new_entry)
+        session.commit()
         
     def go_to_friends_page(self):
         friends_page = self.driver.find_element_by_xpath("//div[@id='root']//a[text()='Friends']").get_attribute('href')
@@ -110,16 +110,35 @@ class Driver:
             return []
 
     def get_profile_pic(self):
-        profile_pic_link = self.driver.find_element_by_xpath("//div[@id='root']/div/div/div[2]/div/div/div/a").get_attribute("href")
-        self.driver.get(profile_pic_link)
-        sleep(1)
-        pic = self.driver.find_element_by_xpath("//div[@id='root']//img").get_attribute("src")
-        urllib.request.urlretrieve(pic, f"file{self.i}.jpg")
+        try:
+            profile_pic_link = self.driver.find_element_by_xpath("//div[@id='root']/div/div/div[2]/div/div/div/a").get_attribute("href")
+            self.driver.get(profile_pic_link)
+            sleep(1)
+            pic = self.driver.find_element_by_xpath("//div[@id='root']//img").get_attribute("src")
+            urllib.request.urlretrieve(pic, f"file{self.i}.jpg")
+        except NoSuchElementException:
+            pass
+
+    def check_friend_in_db(self, source_friend):
+        db_friend_links = [link[0] for link in session.query(Profiles.link).all()]
+        if source_friend in db_friend_links:
+            return True
+        else:
+            return False
 
     def pick_new_friend(self, friend_list):
         number_of_friends = len(friend_list)
         friend_to_pick = randint(0, number_of_friends-1)
         friend_link = friend_list[friend_to_pick]
+        check = self.check_friend_in_db(friend_link)
+        while True:
+            if check == True:
+                if friend_list == []:
+                    return ''
+                friend_list.remove(friend_link)
+                return self.pick_new_friend(friend_list)
+            else:
+                break
         self.driver.get(friend_link) 
         sleep(3)
         return friend_link
@@ -140,9 +159,6 @@ class Driver:
         else:
             return True
     
-    def check_new_friend(self, source_friend):
-        # make sure they are not in stored list
-        pass
     
     def find_verified_friend(self, friend_links):
         while True:
@@ -185,17 +201,7 @@ def main():
         driver.get_profile_pic() # Get profile pic
         print(f"Addeded {driver.profiles[driver.i]}")
         randsleep()
-        while True:
-            source_friend = driver.pick_new_friend(friend_links)
-            check_can_access_friend_page = driver.check_can_access_friend_page()
-            check_has_public_friends = driver.check_has_public_friends()
-            if check_can_access_friend_page == False or check_has_public_friends == False:
-                randsleep()
-                pass
-            else:
-                randsleep()
-                driver.i += 1
-                break
+        source_friend = driver.find_verified_friend(friend_links)
 
 if __name__ == '__main__':
     main()
