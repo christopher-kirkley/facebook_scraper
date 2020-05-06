@@ -1,6 +1,10 @@
 import pytest
 
-from app import Driver, engine, Session, Profiles
+import os
+
+os.environ['TESTDB_URI'] = 'sqlite:///test_facebook.db'
+
+from app import Driver, engine, Session, Profiles, Base
 from time import sleep
 
 from sqlalchemy import create_engine
@@ -16,18 +20,17 @@ def browser():
     driver.driver.quit()
 
 @pytest.fixture(scope="module")
-def connection():
+def session():
+    Base.metadata.bind = engine
+    Base.metadata.create_all()
     connection = engine.connect()
-    yield connection
-    connection.close()
-
-@pytest.fixture(scope="function")
-def session(connection):
     transaction = connection.begin()
     session = Session(bind=connection)
     yield session
     session.close()
-    transaction.rollback()
+    Base.metadata.drop_all(bind=engine)
+    connection.close()
+
 
 """Tests"""
 

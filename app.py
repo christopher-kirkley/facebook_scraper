@@ -14,7 +14,12 @@ from random import randint
 
 from config import USER, PASSWORD
 
-engine = create_engine('sqlite:///facebook.db')
+import os
+
+DATABASE_URI = os.environ.get('TESTDB_URI', 'sqlite:///facebook.db')
+
+engine = create_engine(DATABASE_URI)
+
 Base = declarative_base()
 
 class Profiles(Base):
