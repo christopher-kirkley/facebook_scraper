@@ -12,6 +12,9 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import sessionmaker
 
+testprofile_no_picture = 'https://m.facebook.com/azza.argawy.5'
+testprofile_no_picture_link = 'https://www.facebook.com/birch.cooper.3'
+
 @pytest.fixture(scope="module")
 def browser():
     driver = Driver()
@@ -56,7 +59,6 @@ def test_can_pick_new_friend(browser):
     new_friend = browser.pick_new_friend(friend_list)
     assert new_friend in friend_list
 
-"""FAILING"""
 def test_friend_in_db_fails(browser):
     friend_list = ['https://m.facebook.com/christopher.kirkley']
     browser.driver.get('https://m.facebook.com/christopher.kirkley')
@@ -86,6 +88,14 @@ def test_check_can_access_friend_page(browser):
     private_friend_page = 'https://m.facebook.com/profile.php?id=100035967198582'
     browser.driver.get(private_friend_page)
     check = browser.check_can_access_friend_page()
+    assert check == False
+
+def test_check_has_profile_picture(browser):
+    check = browser.get_profile_pic(testprofile_no_picture)
+    assert check == False
+
+def test_check_has_profile_picture_link(browser):
+    check = browser.get_profile_pic(testprofile_no_picture_link)
     assert check == False
 
 def test_verified_friend(browser):

@@ -114,15 +114,19 @@ class Driver:
         except NoSuchElementException:
             return []
 
-    def get_profile_pic(self):
+    def get_profile_pic(self, source_friend):
+        self.driver.get(source_friend)
         try:
             profile_pic_link = self.driver.find_element_by_xpath("//div[@id='root']/div/div/div[2]/div/div/div/a").get_attribute("href")
             self.driver.get(profile_pic_link)
-            sleep(1)
-            pic = self.driver.find_element_by_xpath("//div[@id='root']//img").get_attribute("src")
-            urllib.request.urlretrieve(pic, f"file{self.i}.jpg")
         except NoSuchElementException:
-            pass
+            return False
+        sleep(1)
+        try:
+            pic = self.driver.find_element_by_xpath("//div[@id='root']//img").get_attribute("src")
+        except NoSuchElementException:
+            return False
+        return pic
 
     def check_friend_in_db(self, source_friend):
         db_friend_links = [link[0] for link in session.query(Profiles.link).all()]
@@ -131,6 +135,10 @@ class Driver:
         else:
             return False
 
+    def check_has_profile_picture(self, source_friend):
+        self.driver.get(source_friend)
+        self.get_profile_pic(self)
+
     def pick_new_friend(self, friend_list):
         number_of_friends = len(friend_list)
         friend_to_pick = randint(0, number_of_friends-1)
@@ -138,9 +146,9 @@ class Driver:
         check = self.check_friend_in_db(friend_link)
         while True:
             if check == True:
+                friend_list.remove(friend_link)
                 if friend_list == []:
                     return ''
-                friend_list.remove(friend_link)
                 return self.pick_new_friend(friend_list)
             else:
                 break
@@ -171,7 +179,9 @@ class Driver:
             check_can_access_friend_page = self.check_can_access_friend_page()
             if check_can_access_friend_page == True:
                 check_has_public_friends = self.check_has_public_friends()
-            if check_can_access_friend_page == False or check_has_public_friends == False:
+                randsleep()
+                check_has_profile_pic = self.get_profile_pic(source_friend)
+            if check_can_access_friend_page == False or check_has_public_friends == False or check_has_profile_pic == False:
                 randsleep()
                 friend_links.remove(source_friend)
                 if friend_links == []:
@@ -203,7 +213,8 @@ def main():
         randsleep()
         driver.driver.get(source_friend)
         driver.save() # Save entry
-        driver.get_profile_pic() # Get profile pic
+        pic = driver.get_profile_pic(source_friend) # Get profile pic
+        urllib.request.urlretrieve(pic, f"file{driver.i}.jpg")
         print(f"Addeded {driver.profiles[driver.i]}")
         randsleep()
         source_friend = driver.find_verified_friend(friend_links)
